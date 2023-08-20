@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joho/godotenv"
 	"log"
@@ -44,13 +45,38 @@ func SendProjectsList(chatID int64, RedmineClient *redmine.RedmineClient) {
 	}
 
 	messageText := "Выберите проект:\n"
+	var rows [][]tgbotapi.InlineKeyboardButton
 
 	for _, project := range projects {
 		messageText += strconv.Itoa(project.ID) + " - " + project.Name + "\n"
+
+		btn := tgbotapi.NewInlineKeyboardButtonData(project.Name, strconv.Itoa(project.ID))
+		row := tgbotapi.NewInlineKeyboardRow(btn)
+		rows = append(rows, row)
+	}
+
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(rows...)
+	msg := tgbotapi.NewMessage(chatID, messageText)
+	msg.ReplyMarkup = keyboard
+	RedmineBot.API.Send(msg)
+}
+
+func SendTaskList(chatID int64, RedmineClient *redmine.RedmineClient, projectID int) {
+	tasks, err := RedmineClient.GetIssuesForProject(projectID)
+	if err != nil {
+		log.Printf("Не удалось отправить задачи по проекту %d: %s", projectID, err)
+	}
+
+	messageText := fmt.Sprintf("Задачи по проекту %d\n", projectID)
+
+	for _, task := range tasks {
+		messageText += fmt.Sprintf("Номер задачи: %d\n Автор задачи: %s\n Статус задачи: %s\n Тема: %s\n, Описание: %s",
+			task.ID, task.Author, task.Status, task.Subject, task.Description)
 	}
 
 	msg := tgbotapi.NewMessage(chatID, messageText)
 	RedmineBot.API.Send(msg)
+
 }
 
 func HandleCallbackQuery(query *tgbotapi.CallbackQuery, RedmineClient *redmine.RedmineClient) {
@@ -60,20 +86,5 @@ func HandleCallbackQuery(query *tgbotapi.CallbackQuery, RedmineClient *redmine.R
 		return
 	}
 
-	issues, err := RedmineClient.GetIssuesForProject(projectID)
-	if err != nil {
-		log.Printf("Error fetching issues: %s", err)
-		return
-	}
-
-	messageText := "Список задач:\n"
-
-	for _, issue := range issues {
-		messageText += "Номер: " + strconv.Itoa(issue.ID) + "\n"
-		messageText += "Тема: " + issue.Subject + "\n"
-		messageText += "Описание: " + issue.Description + "\n\n"
-	}
-
-	msg := tgbotapi.NewMessage(query.Message.Chat.ID, messageText)
-	RedmineBot.API.Send(msg)
+	SendTaskList(query.Message.Chat.ID, RedmineClient, projectID)
 }
