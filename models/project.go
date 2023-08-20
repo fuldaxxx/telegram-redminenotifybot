@@ -7,8 +7,8 @@ type ProjectsList struct {
 }
 
 type Projects struct {
-	ID   int `json:"id"`
-	Name int `json:"name"`
+	ID   int    `json:"id"`
+	Name string `json:"name"`
 }
 
 func (p Projects) GetProjects() string {
