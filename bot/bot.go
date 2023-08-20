@@ -62,11 +62,11 @@ func SendProjectsList(chatID int64, RedmineClient *redmine.RedmineClient) {
 		return
 	}
 
-	messageText := "Выберите проект:\n"
+	messageText := "Выберите проект\n"
 	var rows [][]tgbotapi.InlineKeyboardButton
 
 	for _, project := range projects {
-		messageText += strconv.Itoa(project.ID) + " - " + project.Name + "\n"
+		//messageText += strconv.Itoa(project.ID) + " - " + project.Name + "\n"
 
 		btn := tgbotapi.NewInlineKeyboardButtonData(project.Name, strconv.Itoa(project.ID))
 		row := tgbotapi.NewInlineKeyboardRow(btn)
