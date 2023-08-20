@@ -33,6 +33,7 @@ func main() {
 
 		if update.Message.Text == "/start" {
 			bot.SendProjectsList(chatID, RedmineClient)
+			//bot.SendTaskList(chatID, RedmineClient, 348)
 		}
 		if update.CallbackQuery != nil {
 			bot.HandleCallbackQuery(update.CallbackQuery, RedmineClient)

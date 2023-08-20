@@ -4,9 +4,12 @@ import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joho/godotenv"
+	"golang.org/x/net/html"
 	"log"
 	"os"
+	"regexp"
 	"strconv"
+	"strings"
 	"telegram-redminenotifybot/models"
 	"telegram-redminenotifybot/redmine"
 )
@@ -37,6 +40,21 @@ func NewBot(token string) error {
 	return nil
 }
 
+func cleanHTMLTags(htmlText string) string {
+	tokenizer := html.NewTokenizer(strings.NewReader(htmlText))
+	cleanText := ""
+
+	for {
+		tokenType := tokenizer.Next()
+		switch tokenType {
+		case html.ErrorToken:
+			return cleanText
+		case html.TextToken:
+			cleanText += tokenizer.Token().Data
+		}
+	}
+}
+
 func SendProjectsList(chatID int64, RedmineClient *redmine.RedmineClient) {
 	projects, err := RedmineClient.GetProjects()
 	if err != nil {
@@ -64,18 +82,29 @@ func SendProjectsList(chatID int64, RedmineClient *redmine.RedmineClient) {
 func SendTaskList(chatID int64, RedmineClient *redmine.RedmineClient, projectID int) {
 	tasks, err := RedmineClient.GetIssuesForProject(projectID)
 	if err != nil {
-		log.Printf("Не удалось отправить задачи по проекту %d: %s", projectID, err)
+		log.Printf("Не удалось получить задачи по проекту %d: %s", projectID, err)
+		errorMsg := fmt.Sprintf("Произошла ошибка при получении задач для проекта %d", projectID)
+		msg := tgbotapi.NewMessage(chatID, errorMsg)
+		RedmineBot.API.Send(msg)
+		return
 	}
 
 	messageText := fmt.Sprintf("Задачи по проекту %d\n", projectID)
 
 	for _, task := range tasks {
-		messageText += fmt.Sprintf("Номер задачи: %d\n Автор задачи: %s\n Статус задачи: %s\n Тема: %s\n, Описание: %s",
-			task.ID, task.Author, task.Status, task.Subject, task.Description)
+		if task.Status.Name != "Решена" && task.Status.Name != "Обратная связь" && len(task.Description) > 5 {
+			taskText := fmt.Sprintf("Номер задачи: %d\n Автор задачи: %s\n Статус задачи: %s\n Тема: %s\n Описание: %s",
+				task.ID, task.Author.Name, task.Status.Name, task.Subject, cleanHTMLTags(task.Description))
+
+			messageText += taskText + "\n\n"
+		}
 	}
 
 	msg := tgbotapi.NewMessage(chatID, messageText)
-	RedmineBot.API.Send(msg)
+	_, err = RedmineBot.API.Send(msg)
+	if err != nil {
+		log.Printf("Error sending message: %s", err)
+	}
 
 }
 
@@ -87,4 +116,14 @@ func HandleCallbackQuery(query *tgbotapi.CallbackQuery, RedmineClient *redmine.R
 	}
 
 	SendTaskList(query.Message.Chat.ID, RedmineClient, projectID)
+}
+
+func stripHTMLTags(input string) string {
+	re := regexp.MustCompile(`<.*?>`)
+	return re.ReplaceAllString(input, "")
+}
+
+func removeExtraCharacters(input string) string {
+	re := regexp.MustCompile(`\s+`)
+	return re.ReplaceAllString(input, " ")
 }
