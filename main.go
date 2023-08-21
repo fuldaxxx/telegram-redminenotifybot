@@ -22,20 +22,23 @@ func main() {
 		log.Fatalf("Failed to initialize bot: %s", err)
 	}
 
-	updates := bot.RedmineBot.API.GetUpdatesChan(tgbotapi.NewUpdate(0))
+	u := tgbotapi.NewUpdate(0)
+	u.Timeout = 60
+
+	updates := bot.RedmineBot.API.GetUpdatesChan(u)
 
 	for update := range updates {
-		if update.Message == nil {
-			continue
-		}
 
-		chatID := update.Message.Chat.ID
+		if update.Message != nil {
+			switch update.Message.Command() {
+			case "start":
+				bot.SendProjectsList(update.Message.Chat.ID, RedmineClient)
+			default:
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Эта команда мне не известна")
+				bot.RedmineBot.API.Send(msg)
+			}
 
-		if update.Message.Text == "/start" {
-			bot.SendProjectsList(chatID, RedmineClient)
-			//bot.SendTaskList(chatID, RedmineClient, 348)
-		}
-		if update.CallbackQuery != nil {
+		} else if update.CallbackQuery != nil {
 			bot.HandleCallbackQuery(update.CallbackQuery, RedmineClient)
 		}
 	}

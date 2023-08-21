@@ -7,7 +7,6 @@ import (
 	"golang.org/x/net/html"
 	"log"
 	"os"
-	"regexp"
 	"strconv"
 	"strings"
 	"telegram-redminenotifybot/models"
@@ -66,8 +65,6 @@ func SendProjectsList(chatID int64, RedmineClient *redmine.RedmineClient) {
 	var rows [][]tgbotapi.InlineKeyboardButton
 
 	for _, project := range projects {
-		//messageText += strconv.Itoa(project.ID) + " - " + project.Name + "\n"
-
 		btn := tgbotapi.NewInlineKeyboardButtonData(project.Name, strconv.Itoa(project.ID))
 		row := tgbotapi.NewInlineKeyboardRow(btn)
 		rows = append(rows, row)
@@ -115,15 +112,7 @@ func HandleCallbackQuery(query *tgbotapi.CallbackQuery, RedmineClient *redmine.R
 		return
 	}
 
+	log.Printf(query.Data)
+
 	SendTaskList(query.Message.Chat.ID, RedmineClient, projectID)
-}
-
-func stripHTMLTags(input string) string {
-	re := regexp.MustCompile(`<.*?>`)
-	return re.ReplaceAllString(input, "")
-}
-
-func removeExtraCharacters(input string) string {
-	re := regexp.MustCompile(`\s+`)
-	return re.ReplaceAllString(input, " ")
 }
