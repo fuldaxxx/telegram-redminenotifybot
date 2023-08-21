@@ -9,6 +9,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"telegram-redminenotifybot/database"
 	"telegram-redminenotifybot/models"
 	"telegram-redminenotifybot/redmine"
 )
@@ -76,7 +77,9 @@ func SendProjectsList(chatID int64, RedmineClient *redmine.RedmineClient) {
 	RedmineBot.API.Send(msg)
 }
 
-func SendTaskList(chatID int64, RedmineClient *redmine.RedmineClient, projectID int) {
+func SendTaskList(chatID int64, RedmineClient *redmine.RedmineClient, projectID int, user database.User) {
+	InitEnv()
+	redmineURL := user.RedmineURL
 	tasks, err := RedmineClient.GetIssuesForProject(projectID)
 	if err != nil {
 		log.Printf("Не удалось получить задачи по проекту %d: %s", projectID, err)
@@ -90,10 +93,12 @@ func SendTaskList(chatID int64, RedmineClient *redmine.RedmineClient, projectID 
 
 	for _, task := range tasks {
 		if task.Status.Name != "Решена" && task.Status.Name != "Обратная связь" && len(task.Description) > 5 {
-			taskText := fmt.Sprintf("Номер задачи: %d\n Автор задачи: %s\n Статус задачи: %s\n Тема: %s\n Описание: %s",
-				task.ID, task.Author.Name, task.Status.Name, task.Subject, cleanHTMLTags(task.Description))
+			taskText := fmt.Sprintf("Номер задачи: %d\nАвтор задачи: %s\nСтатус задачи: %s\nТема: %s\n",
+				task.ID, task.Author.Name, task.Status.Name, task.Subject)
 
-			messageText += taskText + "\n\n"
+			messageText += taskText + "\n"
+			messageText += fmt.Sprintf("%s/issues/%d", redmineURL, task.ID)
+			messageText += "\n\n"
 		}
 	}
 
@@ -105,7 +110,7 @@ func SendTaskList(chatID int64, RedmineClient *redmine.RedmineClient, projectID 
 
 }
 
-func HandleCallbackQuery(query *tgbotapi.CallbackQuery, RedmineClient *redmine.RedmineClient) {
+func HandleCallbackQuery(query *tgbotapi.CallbackQuery, RedmineClient *redmine.RedmineClient, user database.User) {
 	projectID, err := strconv.Atoi(query.Data)
 	if err != nil {
 		log.Printf("Error parsing project ID: %s", err)
@@ -114,5 +119,5 @@ func HandleCallbackQuery(query *tgbotapi.CallbackQuery, RedmineClient *redmine.R
 
 	log.Printf(query.Data)
 
-	SendTaskList(query.Message.Chat.ID, RedmineClient, projectID)
+	SendTaskList(query.Message.Chat.ID, RedmineClient, projectID, user)
 }
