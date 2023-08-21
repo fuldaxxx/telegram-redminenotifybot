@@ -78,7 +78,6 @@ func SendProjectsList(chatID int64, RedmineClient *redmine.RedmineClient) {
 }
 
 func SendTaskList(chatID int64, RedmineClient *redmine.RedmineClient, projectID int, user database.User) {
-	InitEnv()
 	redmineURL := user.RedmineURL
 	tasks, err := RedmineClient.GetIssuesForProject(projectID)
 	if err != nil {

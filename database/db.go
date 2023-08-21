@@ -11,21 +11,37 @@ type User struct {
 	ChatID     int64 `gorm:"uniqueIndex"`
 	RedmineURL string
 	APIKey     string
+	Project    Project
+}
+
+type Project struct {
+	gorm.Model
+	ProjectID string
+	UserID    int64
 }
 
 var DB *gorm.DB
 
+func SaveUserProject(db *gorm.DB, chatID int64, projectID string) error {
+	user := User{ChatID: chatID}
+	project := Project{ProjectID: projectID, UserID: chatID}
+
+	err := db.FirstOrCreate(&user, user).Error
+	if err != nil {
+		return err
+	}
+
+	return db.FirstOrCreate(&project, project).Error
+}
+
 func OpenDatabase() (*gorm.DB, error) {
 	dbFile := "redmine_bot.db"
 
-	// Проверяем, существует ли файл базы данных
 	_, err := os.Stat(dbFile)
 	if os.IsNotExist(err) {
-		// Файл базы данных не существует, создаем новую базу данных
 		return gorm.Open(sqlite.Open(dbFile), &gorm.Config{})
 	}
 
-	// Файл базы данных существует, открываем его
 	return gorm.Open(sqlite.Open(dbFile), &gorm.Config{})
 }
 

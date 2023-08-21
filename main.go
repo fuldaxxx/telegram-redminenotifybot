@@ -1,5 +1,3 @@
-// main.go
-
 package main
 
 import (
@@ -23,6 +21,7 @@ func main() {
 	}
 
 	db.AutoMigrate(&database.User{})
+	db.AutoMigrate((&database.Project{}))
 
 	err := bot.NewBot(os.Getenv("API_TOKEN"))
 	if err != nil {
@@ -57,14 +56,12 @@ func main() {
 				urlUpdate := <-updates
 				redmineURL := urlUpdate.Message.Text
 
-				// Запрос APIkey
 				msg = tgbotapi.NewMessage(chatID, "Введите API Key:")
 				bot.RedmineBot.API.Send(msg)
 
 				apiKeyUpdate := <-updates
 				apiKey := apiKeyUpdate.Message.Text
 
-				// Сохранение данных в базе данных
 				user := database.User{
 					ChatID:     chatID,
 					RedmineURL: redmineURL,
@@ -80,6 +77,12 @@ func main() {
 			}
 
 		} else if update.CallbackQuery != nil {
+			projectID := update.CallbackQuery.Data
+			err = database.SaveUserProject(db, update.CallbackQuery.Message.Chat.ID, projectID)
+			if err != nil {
+				log.Printf("Error saving user project: %s", err)
+				continue
+			}
 			bot.HandleCallbackQuery(update.CallbackQuery, RedmineClient, user)
 		}
 	}
