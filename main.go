@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -27,6 +28,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize bot: %s", err)
 	}
+	var user database.User
+	var projets database.Project
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
@@ -34,7 +37,6 @@ func main() {
 	updates := bot.RedmineBot.API.GetUpdatesChan(u)
 
 	for update := range updates {
-		var user database.User
 		var chatId int64
 		if update.Message == nil {
 			chatId = update.CallbackQuery.Message.Chat.ID
@@ -42,12 +44,16 @@ func main() {
 			chatId = update.Message.Chat.ID
 		}
 		db.Where("chat_id = ?", chatId).First(&user)
+		db.Where("user_id = ?", chatId).First(&projets)
 		RedmineClient = redmine.NewRedmineClient(user.RedmineURL, user.APIKey)
+
+		go bot.GetNewTask(RedmineClient, projets.ProjectID, projets.UserID, user)
 
 		if update.Message != nil {
 			switch update.Message.Command() {
 			case "tasks":
-				bot.SendProjectsList(update.Message.Chat.ID, RedmineClient)
+				db.Where("user_id = ?", chatId).First(&projets)
+				bot.SendTaskList(chatId, RedmineClient, projets.ProjectID, user)
 			case "start":
 				chatID := update.Message.Chat.ID
 				msg := tgbotapi.NewMessage(chatID, "Введите Redmine URL:")
@@ -71,6 +77,8 @@ func main() {
 
 				msg = tgbotapi.NewMessage(chatID, "Теперь введите команду /tasks.")
 				bot.RedmineBot.API.Send(msg)
+			case "projects":
+				bot.SendProjectsList(update.Message.Chat.ID, RedmineClient)
 			default:
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Эта команда мне не известна")
 				bot.RedmineBot.API.Send(msg)
@@ -83,7 +91,9 @@ func main() {
 				log.Printf("Error saving user project: %s", err)
 				continue
 			}
-			bot.HandleCallbackQuery(update.CallbackQuery, RedmineClient, user)
+			msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID,
+				fmt.Sprintf("Теперь вам будут приходить уведомления по проекту: %s", update.CallbackQuery.Data))
+			bot.RedmineBot.API.Send(msg)
 		}
 	}
 }

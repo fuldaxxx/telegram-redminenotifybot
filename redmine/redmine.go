@@ -21,8 +21,8 @@ func NewRedmineClient(url, token string) *RedmineClient {
 	}
 }
 
-func (r *RedmineClient) GetIssuesForProject(projectID int) ([]models.Issue, error) {
-	url := fmt.Sprintf("%s/issues.json?project_id=%d", r.URL, projectID)
+func (r *RedmineClient) GetIssuesForProject(projectID string) ([]models.Issue, error) {
+	url := fmt.Sprintf("%s/issues.json?project_id=%s", r.URL, projectID)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {

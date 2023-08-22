@@ -1,9 +1,9 @@
 package database
 
 import (
-	"gorm.io/driver/sqlite"
+	"errors"
+	"fmt"
 	"gorm.io/gorm"
-	"os"
 )
 
 type User struct {
@@ -23,47 +23,26 @@ type Project struct {
 var DB *gorm.DB
 
 func SaveUserProject(db *gorm.DB, chatID int64, projectID string) error {
-	user := User{ChatID: chatID}
-	project := Project{ProjectID: projectID, UserID: chatID}
+	fmt.Printf("chatID: %d, projectID: %s\n", chatID, projectID)
 
-	err := db.FirstOrCreate(&user, user).Error
+	user := &User{}
+	err := db.Where("chat_id = ?", chatID).First(user).Error
 	if err != nil {
+		fmt.Printf("Error fetching user record: %s\n", err)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			user = &User{ChatID: chatID, Project: Project{ProjectID: projectID}}
+			return db.Create(user).Error
+		}
 		return err
 	}
 
-	return db.FirstOrCreate(&project, project).Error
-}
-
-func OpenDatabase() (*gorm.DB, error) {
-	dbFile := "redmine_bot.db"
-
-	_, err := os.Stat(dbFile)
-	if os.IsNotExist(err) {
-		return gorm.Open(sqlite.Open(dbFile), &gorm.Config{})
-	}
-
-	return gorm.Open(sqlite.Open(dbFile), &gorm.Config{})
-}
-
-func InitDB() error {
-	db, err := gorm.Open(sqlite.Open("redmine_bot.db"), &gorm.Config{})
+	// Выполните обновление проекта в таблице projects
+	err = db.Model(&Project{}).Where("user_id = ?", chatID).
+		Update("project_id", projectID).Error
 	if err != nil {
+		fmt.Printf("Error updating project record: %s\n", err)
 		return err
 	}
-
-	DB = db
-
-	db.AutoMigrate(&User{})
 
 	return nil
-}
-
-func GetUserByUsername(username string) (User, error) {
-	var user User
-	result := DB.Where("telegram_username = ?", username).First(&user)
-	if result.Error != nil {
-		return User{}, result.Error
-	}
-
-	return user, nil
 }
