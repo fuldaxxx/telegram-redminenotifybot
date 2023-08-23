@@ -36,6 +36,18 @@ func SaveUserProject(db *gorm.DB, chatID int64, projectID string) error {
 		return err
 	}
 
+	var project Project
+	err = db.Where("user_id = ?", chatID).First(&project).Error
+	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		// Если не существует, создать новую запись
+		project = Project{UserID: chatID, ProjectID: projectID}
+		return db.Create(&project).Error
+	} else if err != nil {
+		// Если произошла другая ошибка, вернуть ее
+		fmt.Printf("Error checking project record: %s\n", err)
+		return err
+	}
+
 	// Выполните обновление проекта в таблице projects
 	err = db.Model(&Project{}).Where("user_id = ?", chatID).
 		Update("project_id", projectID).Error

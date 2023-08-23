@@ -1,14 +1,14 @@
 package bot
 
 import (
+	"errors"
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joho/godotenv"
-	"golang.org/x/net/html"
+	"gorm.io/gorm"
 	"log"
 	"os"
 	"strconv"
-	"strings"
 	"telegram-redminenotifybot/database"
 	"telegram-redminenotifybot/models"
 	"telegram-redminenotifybot/redmine"
@@ -39,21 +39,6 @@ func NewBot(token string) error {
 	log.Printf("Авторизация в %s", bot.Self.UserName)
 
 	return nil
-}
-
-func cleanHTMLTags(htmlText string) string {
-	tokenizer := html.NewTokenizer(strings.NewReader(htmlText))
-	cleanText := ""
-
-	for {
-		tokenType := tokenizer.Next()
-		switch tokenType {
-		case html.ErrorToken:
-			return cleanText
-		case html.TextToken:
-			cleanText += tokenizer.Token().Data
-		}
-	}
 }
 
 func SendProjectsList(chatID int64, RedmineClient *redmine.RedmineClient) {
@@ -171,4 +156,35 @@ func findNewIssue(lastTasks []models.Issue, newTasks []models.Issue) []models.Is
 	}
 
 	return tasksArray
+}
+
+func StartTaskListeners(db *gorm.DB) {
+	var projects []database.Project
+	db.Find(&projects)
+
+	for _, project := range projects {
+		go func(p database.Project) {
+			user := getUserByChatID(db, p.UserID)
+			if user == nil {
+				log.Printf("Пользователь не найден для проекта: %+v", p)
+				return
+			}
+
+			RedmineClient := redmine.NewRedmineClient(user.RedmineURL, user.APIKey)
+			GetNewTask(RedmineClient, p.ProjectID, user.ChatID, *user)
+		}(project)
+	}
+}
+
+func getUserByChatID(db *gorm.DB, chatID int64) *database.User {
+	user := &database.User{}
+	result := db.Where("chat_id = ?", chatID).First(user)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil
+		}
+		log.Printf("Ошибка при получении записи о пользователе: %s", result.Error)
+		return nil
+	}
+	return user
 }
