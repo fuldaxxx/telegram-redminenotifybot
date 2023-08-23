@@ -10,7 +10,6 @@ import (
 	"telegram-redminenotifybot/bot"
 	"telegram-redminenotifybot/database"
 	"telegram-redminenotifybot/redmine"
-	"time"
 )
 
 var RedmineClient *redmine.RedmineClient
@@ -96,21 +95,5 @@ func main() {
 				fmt.Sprintf("Теперь вам будут приходить уведомления по проекту: %s", update.CallbackQuery.Data))
 			bot.RedmineBot.API.Send(msg)
 		}
-	}
-}
-
-func RunUserTaskChecker(db *gorm.DB, user database.User) {
-	RedmineClient := redmine.NewRedmineClient(user.RedmineURL, user.APIKey)
-
-	for {
-		var project database.Project
-		if err := db.Where("user_id = ?", user.ChatID).First(&project).Error; err != nil {
-			log.Printf("Error fetching project record for user %d: %s", user.ChatID, err)
-			return
-		}
-
-		bot.GetNewTask(RedmineClient, project.ProjectID, user.ChatID, user)
-
-		time.Sleep(time.Minute) // Интервал между выполнениями для данного пользователя
 	}
 }
