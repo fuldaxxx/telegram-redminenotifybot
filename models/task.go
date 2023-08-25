@@ -16,6 +16,7 @@ type Issue struct {
 	AssignedTo  AssignedTo `json:"assigned_to"`
 	Subject     string     `json:"subject"`
 	Description string     `json:"description"`
+	Journals    []Journals `json:"journals"`
 }
 
 type Tracker struct {
@@ -39,6 +40,18 @@ type Author struct {
 }
 
 type AssignedTo struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+type Journals struct {
+	ID        int    `json:"id"`
+	User      User   `json:"user"`
+	Notes     string `json:"notes"`
+	CreatedOn string `json:"created_on"`
+}
+
+type User struct {
 	ID   int    `json:"id"`
 	Name string `json:"name"`
 }

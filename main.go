@@ -45,8 +45,7 @@ func main() {
 		} else {
 			chatId = update.Message.Chat.ID
 		}
-		db.Where("chat_id = ?", chatId).First(&user)
-		db.Where("user_id = ?", chatId).First(&projets)
+		db.Unscoped().Where("chat_id = ?", chatId).First(&user)
 		RedmineClient = redmine.NewRedmineClient(user.RedmineURL, user.APIKey)
 
 		if update.Message != nil {
@@ -75,10 +74,13 @@ func main() {
 				}
 				db.Create(&user)
 
-				msg = tgbotapi.NewMessage(chatID, "Теперь введите команду /tasks.")
+				msg = tgbotapi.NewMessage(chatID, "Теперь введите команду /projects и выберите проект за которым хотите следить."+
+					" Так же, с помощью комманды /tasks вы можете просмотерть свои задачи в работе")
 				bot.RedmineBot.API.Send(msg)
 			case "projects":
 				bot.SendProjectsList(update.Message.Chat.ID, RedmineClient)
+			case "comment":
+				bot.GetComment(RedmineClient, 18905, chatId)
 			default:
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Эта команда мне не известна")
 				bot.RedmineBot.API.Send(msg)

@@ -70,3 +70,28 @@ func (r *RedmineClient) GetProjects() ([]models.Projects, error) {
 
 	return projectsList.Projects, nil
 }
+
+func (r *RedmineClient) GetTaskJournals(taskID int) ([]models.Journals, error) {
+	url := fmt.Sprintf("/issues/%d.json?incldue=journals", taskID)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("X-Redmine-API-Key", r.Token)
+
+	resp, err := r.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var issue models.Issue
+	err = json.NewDecoder(resp.Body).Decode(&issue)
+	if err != nil {
+		return nil, err
+	}
+
+	return issue.Journals, nil
+}

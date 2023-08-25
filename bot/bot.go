@@ -78,8 +78,8 @@ func SendTaskList(chatID int64, RedmineClient *redmine.RedmineClient, projectID 
 
 	for _, task := range tasks {
 		if task.Status.Name != "Решена" && task.Status.Name != "Обратная связь" && len(task.Description) > 5 {
-			taskText := fmt.Sprintf("Номер задачи: %d\nАвтор задачи: %s\nСтатус задачи: %s\nТема: %s\n",
-				task.ID, task.Author.Name, task.Status.Name, task.Subject)
+			taskText := fmt.Sprintf("Номер задачи: %d\nАвтор задачи: %s\nСтатус задачи: %s\nТема: %s\nId Комментария: %+v\n",
+				task.ID, task.Author.Name, task.Status.Name, task.Subject, task.Journals)
 
 			messageText += taskText + "\n"
 			messageText += fmt.Sprintf("%s/issues/%d", redmineURL, task.ID)
@@ -114,7 +114,7 @@ func GetNewTask(client *redmine.RedmineClient, projectID string, chatID int64, u
 		newIssues := findNewIssue(lastTask, tasks)
 		messageText := fmt.Sprintf("Новая задача по проекту: %s\n", projectID)
 		for _, newIssue := range newIssues {
-			if newIssue.Status.Name != "Решена" && newIssue.Status.Name != "Обратная связь" && len(newIssue.Description) > 5 {
+			if newIssue.Status.Name != "Решена" && len(newIssue.Description) > 5 {
 				taskText := fmt.Sprintf("Номер задачи: %d\nАвтор задачи: %s\nСтатус задачи: %s\nТема: %s\n",
 					newIssue.ID, newIssue.Author.Name, newIssue.Status.Name, newIssue.Subject)
 
@@ -124,7 +124,7 @@ func GetNewTask(client *redmine.RedmineClient, projectID string, chatID int64, u
 			}
 		}
 
-		if messageText != fmt.Sprintf("Новая задача по проекту: %s\n", projectID) {
+		if messageText != fmt.Sprintf("Новая задача по проекту: %s\n", projectID) && chatID != 286405669 {
 			msg := tgbotapi.NewMessage(chatID, messageText)
 			_, err = RedmineBot.API.Send(msg)
 			if err != nil {
@@ -178,7 +178,7 @@ func StartTaskListeners(db *gorm.DB) {
 
 func getUserByChatID(db *gorm.DB, chatID int64) *database.User {
 	user := &database.User{}
-	result := db.Where("chat_id = ?", chatID).First(user)
+	result := db.Unscoped().Where("chat_id = ?", chatID).First(user)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil
@@ -188,3 +188,23 @@ func getUserByChatID(db *gorm.DB, chatID int64) *database.User {
 	}
 	return user
 }
+
+func GetComment(client *redmine.RedmineClient, taskID int, chatID int64) {
+	comment, err := client.GetTaskJournals(taskID)
+	if err != nil {
+		return
+	}
+	messageText := strconv.Itoa(comment[0].ID)
+
+	msg := tgbotapi.NewMessage(chatID, messageText)
+	_, err = RedmineBot.API.Send(msg)
+	if err != nil {
+		log.Printf("Не удалось отправить сообщение %s", err)
+	}
+}
+
+//func GetNewComment(client *redmine.RedmineClient, projectID string, chatID int64, user database.User) {
+//	for {
+//		tasks, err := client.GetIssuesForProject()
+//	}
+//}
