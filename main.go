@@ -9,10 +9,10 @@ import (
 	"os"
 	"telegram-redminenotifybot/bot"
 	"telegram-redminenotifybot/database"
-	"telegram-redminenotifybot/redmine"
+	"telegram-redminenotifybot/models"
 )
 
-var RedmineClient *redmine.RedmineClient
+var RedmineClient *models.RedmineClient
 
 func main() {
 	bot.InitEnv()
@@ -46,7 +46,7 @@ func main() {
 			chatId = update.Message.Chat.ID
 		}
 		db.Unscoped().Where("chat_id = ?", chatId).First(&user)
-		RedmineClient = redmine.NewRedmineClient(user.RedmineURL, user.APIKey)
+		RedmineClient = bot.NewRedmineClient(user.RedmineURL, user.APIKey)
 
 		if update.Message != nil {
 			switch update.Message.Command() {
@@ -79,8 +79,8 @@ func main() {
 				bot.RedmineBot.API.Send(msg)
 			case "projects":
 				bot.SendProjectsList(update.Message.Chat.ID, RedmineClient)
-			case "comment":
-				bot.GetComment(RedmineClient, 18905, chatId)
+			//case "comment":
+			//	bot.GetComment(RedmineClient, 18905, chatId)
 			default:
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Эта команда мне не известна")
 				bot.RedmineBot.API.Send(msg)

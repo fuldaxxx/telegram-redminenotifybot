@@ -1,7 +1,5 @@
 package models
 
-import "fmt"
-
 type IssueList struct {
 	Issue []Issue `json:"issues"`
 }
@@ -54,9 +52,4 @@ type Journals struct {
 type User struct {
 	ID   int    `json:"id"`
 	Name string `json:"name"`
-}
-
-func (i Issue) GetTask() string {
-	return fmt.Sprintf("Задача #%d \nТема: %s \nОписание: %s \n Статус: %s",
-		i.ID, i.Subject, i.Description, i.Status)
 }

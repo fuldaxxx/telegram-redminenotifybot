@@ -1,10 +1,9 @@
-package redmine
+package models
 
 import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"telegram-redminenotifybot/models"
 )
 
 type RedmineClient struct {
@@ -13,15 +12,7 @@ type RedmineClient struct {
 	Client *http.Client
 }
 
-func NewRedmineClient(url, token string) *RedmineClient {
-	return &RedmineClient{
-		URL:    url,
-		Token:  token,
-		Client: &http.Client{},
-	}
-}
-
-func (r *RedmineClient) GetIssuesForProject(projectID string) ([]models.Issue, error) {
+func (r *RedmineClient) GetIssuesForProject(projectID string) ([]Issue, error) {
 	url := fmt.Sprintf("%s/issues.json?project_id=%s", r.URL, projectID)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -37,7 +28,7 @@ func (r *RedmineClient) GetIssuesForProject(projectID string) ([]models.Issue, e
 	}
 	defer resp.Body.Close()
 
-	var issues models.IssueList
+	var issues IssueList
 	err = json.NewDecoder(resp.Body).Decode(&issues)
 	if err != nil {
 		return nil, err
@@ -46,7 +37,7 @@ func (r *RedmineClient) GetIssuesForProject(projectID string) ([]models.Issue, e
 	return issues.Issue, nil
 }
 
-func (r *RedmineClient) GetProjects() ([]models.Projects, error) {
+func (r *RedmineClient) GetProjects() ([]Projects, error) {
 	url := fmt.Sprintf("%s/projects.json", r.URL)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -62,7 +53,7 @@ func (r *RedmineClient) GetProjects() ([]models.Projects, error) {
 	}
 	defer resp.Body.Close()
 
-	var projectsList models.ProjectsList
+	var projectsList ProjectsList
 	err = json.NewDecoder(resp.Body).Decode(&projectsList)
 	if err != nil {
 		return nil, err
@@ -71,7 +62,7 @@ func (r *RedmineClient) GetProjects() ([]models.Projects, error) {
 	return projectsList.Projects, nil
 }
 
-func (r *RedmineClient) GetTaskJournals(taskID int) ([]models.Journals, error) {
+func (r *RedmineClient) GetTaskJournals(taskID int) ([]Journals, error) {
 	url := fmt.Sprintf("/issues/%d.json?incldue=journals", taskID)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -87,7 +78,7 @@ func (r *RedmineClient) GetTaskJournals(taskID int) ([]models.Journals, error) {
 	}
 	defer resp.Body.Close()
 
-	var issue models.Issue
+	var issue Issue
 	err = json.NewDecoder(resp.Body).Decode(&issue)
 	if err != nil {
 		return nil, err
