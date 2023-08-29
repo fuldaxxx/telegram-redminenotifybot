@@ -78,6 +78,7 @@ func GetNewTask(client *models.RedmineClient, projectID string, chatID int64, us
 		lastTask = tasks
 
 		time.Sleep(interval)
+
 	}
 
 }
@@ -114,7 +115,8 @@ func StartTaskListeners(db *gorm.DB) {
 			}
 
 			RedmineClient := NewRedmineClient(user.RedmineURL, user.APIKey)
-			GetNewTask(RedmineClient, p.ProjectID, user.ChatID, *user)
+			go GetNewTask(RedmineClient, p.ProjectID, user.ChatID, *user)
+			go GetNewComments(RedmineClient, user.ChatID, *user, p.ProjectID)
 		}(project)
 	}
 }

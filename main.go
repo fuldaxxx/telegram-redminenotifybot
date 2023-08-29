@@ -79,8 +79,6 @@ func main() {
 				bot.RedmineBot.API.Send(msg)
 			case "projects":
 				bot.SendProjectsList(update.Message.Chat.ID, RedmineClient)
-			//case "comment":
-			//	bot.GetComment(RedmineClient, 18905, chatId)
 			default:
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Эта команда мне не известна")
 				bot.RedmineBot.API.Send(msg)

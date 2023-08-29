@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 type IssueList struct {
 	Issue []Issue `json:"issues"`
 }
@@ -43,10 +45,10 @@ type AssignedTo struct {
 }
 
 type Journals struct {
-	ID        int    `json:"id"`
-	User      User   `json:"user"`
-	Notes     string `json:"notes"`
-	CreatedOn string `json:"created_on"`
+	ID        int       `json:"id"`
+	User      User      `json:"user"`
+	Notes     string    `json:"notes"`
+	CreatedOn time.Time `json:"created_on"`
 }
 
 type User struct {

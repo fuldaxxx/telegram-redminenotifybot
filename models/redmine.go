@@ -63,7 +63,7 @@ func (r *RedmineClient) GetProjects() ([]Projects, error) {
 }
 
 func (r *RedmineClient) GetTaskJournals(taskID int) ([]Journals, error) {
-	url := fmt.Sprintf("/issues/%d.json?incldue=journals", taskID)
+	url := fmt.Sprintf("%s/issues/%d.json?include=journals", r.URL, taskID)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -76,13 +76,14 @@ func (r *RedmineClient) GetTaskJournals(taskID int) ([]Journals, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	defer resp.Body.Close()
 
-	var issue Issue
+	var issue IssueForJournals
 	err = json.NewDecoder(resp.Body).Decode(&issue)
 	if err != nil {
 		return nil, err
 	}
 
-	return issue.Journals, nil
+	return issue.Issue.Journals, nil
 }

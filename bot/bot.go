@@ -33,23 +33,3 @@ func NewBot(token string) error {
 
 	return nil
 }
-
-//func GetComment(client *redmine.RedmineClient, taskID int, chatID int64) {
-//	comment, err := client.GetTaskJournals(taskID)
-//	if err != nil {
-//		return
-//	}
-//	messageText := "лох"
-//
-//	msg := tgbotapi.NewMessage(chatID, messageText)
-//	_, err = RedmineBot.API.Send(msg)
-//	if err != nil {
-//		log.Printf("Не удалось отправить сообщение %s", err)
-//	}
-//}
-
-//func GetNewComment(client *redmine.RedmineClient, projectID string, chatID int64, user database.User) {
-//	for {
-//		tasks, err := client.GetIssuesForProject()
-//	}
-//}

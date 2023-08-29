@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log"
 	"strconv"
@@ -13,6 +14,8 @@ func SendProjectsList(chatID int64, RedmineClient *models.RedmineClient) {
 		log.Printf("Error fetching projects: %s", err)
 		return
 	}
+
+	fmt.Println(projects)
 
 	messageText := "Выберите проект\n"
 	var rows [][]tgbotapi.InlineKeyboardButton
