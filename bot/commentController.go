@@ -40,11 +40,21 @@ func GetNewComments(RedmineClient *models.RedmineClient, chatID int64, user data
 
 			}
 
-			if messageText != fmt.Sprintf("⚡️✉️ Новый комментарий к задаче\n\n") && len(lastCommentForTask) != 0 {
+			userInfo := RedmineClient.GetUserAccount()
+			idUserComment := 0
+			if len(comments) > 0 {
+				idUserComment = comments[len(comments)-1].User.ID
+			}
+			if err != nil {
+				fmt.Printf("Ошибка получения информации о пользователе: %s", err)
+			}
+
+			if messageText != fmt.Sprintf("⚡️✉️ Новый комментарий к задаче\n\n") && len(lastCommentForTask) != 0 && userInfo.ID != idUserComment {
 				msg := tgbotapi.NewMessage(chatID, messageText)
 				_, err = RedmineBot.API.Send(msg)
 				if err != nil {
 					log.Printf("Error sending message: %s", err)
+
 				}
 			}
 

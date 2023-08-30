@@ -45,13 +45,13 @@ func main() {
 		} else {
 			chatId = update.Message.Chat.ID
 		}
-		db.Unscoped().Where("chat_id = ?", chatId).First(&user)
+		db.Unscoped().Where("chat_id = ?", chatId).Find(&user)
 		RedmineClient = bot.NewRedmineClient(user.RedmineURL, user.APIKey)
 
 		if update.Message != nil {
 			switch update.Message.Command() {
 			case "tasks":
-				db.Where("user_id = ?", chatId).First(&projets)
+				db.Where("user_id = ?", chatId).Find(&projets)
 				bot.SendTaskList(chatId, RedmineClient, projets.ProjectID, user)
 			case "start":
 				chatID := update.Message.Chat.ID

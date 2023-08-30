@@ -87,3 +87,20 @@ func (r *RedmineClient) GetTaskJournals(taskID int) ([]Journals, error) {
 
 	return issue.Issue.Journals, nil
 }
+
+func (r *RedmineClient) GetUserAccount() UserAccount {
+	url := fmt.Sprintf("%s/users/current.json", r.URL)
+
+	req, _ := http.NewRequest("GET", url, nil)
+
+	req.Header.Set("X-Redmine-API-Key", r.Token)
+
+	resp, _ := r.Client.Do(req)
+
+	defer resp.Body.Close()
+
+	var UserInfo InfoAboutUser
+	_ = json.NewDecoder(resp.Body).Decode(&UserInfo)
+
+	return UserInfo.User
+}
